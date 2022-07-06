@@ -13,7 +13,7 @@ DSEG SEGMENT PARA PUBLIC "DATA"
     NUMBERS DW 0, 0
     DILNYK DW 0
     OSTACHA DW 0
-    PRECISION DW 6
+    PRECISION DW 6 ; QUANTITY OF ELEMENTS AFTER COMA
 DSEG ENDS
 
 
@@ -21,22 +21,22 @@ DSEG ENDS
 CSEG SEGMENT PARA PUBLIC "CODE"
 ASSUME CS: CSEG, DS: DSEG, SS: STSEG
 
-READNUM PROC NEAR
+READNUM PROC NEAR ;DEFINE PROCEDURE 
 
     START:
         LEA DX, BUFFER ; READ MESSAGE
         MOV AH, 10
-        INT 21H
+        INT 21H ;DOS INTERUPTION - READING STRING FROM CONSOLE 
     
         XOR AX, AX ; NUMBER
         XOR DI, DI ; NEGATIVE FLAG
         XOR CX, CX ; CONVERT CHAR TO NUMBER
         MOV BX, 10 ; BASE 10
     
-        MOV SI, OFFSET BUFFER+2 ; INDEX STARTS FROM 3RD ELEMENT
+        MOV SI, OFFSET BUFFER+2 ; INDEX STARTS FROM 3RD ELEMENT, OFFSET = LEA
     
-        MOV CL, [SI]
-        CMP CL, '-'
+        MOV CL, [SI] ;GETTING VALUE FROM ADRESS THAT IS STORED SI REGISTER
+        CMP CL, '-' ;STORE 1 ELEMENT OF INPUTED
         JNE READONE
         INC SI
         MOV DI, 1 ; NEGATIVE FLAG
@@ -102,17 +102,17 @@ CALCULATE PROC NEAR
     MOV AX, NUMBERS
     MOV BX, NUMBERS + 2
     ADD AX, BX
-    JO OVERFLOW
+    JO OVERFLOW ; JUMP IF OVERFLOW
     CMP AX, 10
-    JL M1
+    JL M1 ;JUMP IF LOWER
     MOV AX, NUMBERS
-    IMUL BX
+    IMUL BX ;ALLOWS TO MULTIPLY - VALUES
     JO OVERFLOW
-    CMP AX, 25
-    JG M2
+    CMP AX, 25 ;DOBYTOK X AND Y
+    JG M2 ;JUMP IF GREATER 
     JMP M3
     
-    OVERFLOW:
+    OVERFLOW: ;ERROR MESSAGE DUE TO OVERFLOW
         MOV AL, 10 ; LF
         INT 29H
         MOV AL, 13 ; CR
@@ -127,63 +127,63 @@ CALCULATE PROC NEAR
     ; 35x^2/y xy > 25 xy < 100
     ; 1 else
     M1:
-        MOV AX, NUMBERS + 2
-        TEST AX, AX
-        JNS M1POS
+        MOV AX, NUMBERS + 2 ; AX = Y
+        TEST AX, AX ;SET FLAGS
+        JNS M1POS ;JUMP IF SIGN FLAG = 0 (IF AX - POSITIVE)
         NEG AX
     M1POS:
-        MUL AX
+        MUL AX ; Y * Y
         JO OVERFLOW
         MOV BX, 10
-        SUB BX, NUMBERS
+        SUB BX, NUMBERS ; 10 - X
         JO OVERFLOW
-        ADD BX, NUMBERS + 2
+        ADD BX, NUMBERS + 2 ; 10-X + Y
         JO OVERFLOW
-        TEST BX, BX
-        JZ DIVBYZERO
-        JNS M1DIVPOS
+        TEST BX, BX ;SET FLAGS
+        JZ DIVBYZERO ; JUMP IF ZERO - DILNIK != 0
+        JNS M1DIVPOS ;JUMP IF SIGN FLAG = 0 => 10 - X + Y = POSITIVE
         MOV DI, 1
         NEG BX
     M1DIVPOS:
-        DIV BX
+        DIV BX ;AX / BX, RESULT = AX, OSTACHA = DX
         RET
     M2:
-        CMP AX, 100
-        JG M3
-        MOV AX, NUMBERS
+        CMP AX, 100 ;X*Y AND 100
+        JG M3 ; JUMP IF X*Y > 100
+        MOV AX, NUMBERS ; X
         TEST AX, AX
-        JNS M2POS
-        NEG AX
+        JNS M2POS ; IF POSITIVE
+        NEG AX; FROM - TO +
     M2POS:
-        MUL AX
+        MUL AX ;[X] = X*X
         JO OVERFLOW
         MOV BX, 35
-        MUL BX
+        MUL BX ; AX = 35X^2
         JO OVERFLOW
-        MOV BX, NUMBERS + 2
+        MOV BX, NUMBERS + 2 ;BX = Y
         TEST BX, BX
-        JZ DIVBYZERO
-        JNS M2DIVPOS
+        JZ DIVBYZERO ;IF Y = 0
+        JNS M2DIVPOS ;IF Y > 0
         MOV DI, 1
-        NEG BX
+        NEG BX ;-Y = +Y
     M2DIVPOS:
-        DIV BX
+        DIV BX ;AX/BX , RESULT = AX, OSTACHA = DX => 35X^2/Y
         RET
-    M3:
-        XOR DX, DX
+    M3:;THIRD CONDITION
+        XOR DX, DX 
         MOV AX, 1
         RET
     
     DIVBYZERO:
         MOV AL, 10 ; LF
-        INT 29H
+        INT 29H ;OUTPUT CHAR TO CONSOLE
         MOV AL, 13 ; CR
         INT 29H
         LEA DX, DIVBYZEROMSG
         MOV AH, 9
-        INT 21H
+        INT 21H ;OUTPUT STRING TO CONSOLE
         XOR AX, AX
-        mov ax, "z"
+        mov ax, "z" ;FLAG THAT SHOWS THAT IT WAS DIVISION BY 0
         RET
     
 CALCULATE ENDP
@@ -192,20 +192,20 @@ CALCULATE ENDP
 
 ; RESULT MUST BE IN AX
 WRITENUM PROC NEAR
-    MOV DILNYK, BX
+    MOV DILNYK, BX ;BX = ZNAM
     MOV OSTACHA, DX
-    MOV BX, AX
+    MOV BX, AX ;INT VALUE STORED IN AX GOING TO BX
     MOV AL, 10 ; LF
     INT 29H
     MOV AL, 13 ; CR
     INT 29H
     
     TEST DI, DI
-    JZ W1
+    JZ W1 ;IF DI = 0
     MOV AL, '-'
     INT 29H
     W1:
-        MOV AX, BX
+        MOV AX, BX ;
         XOR CX, CX ; INIT COUNTER
         MOV BX, 10 ; BASE IS 10, SO DIVIDE BY 10
     W2:
@@ -219,25 +219,25 @@ WRITENUM PROC NEAR
     W3:
         POP AX
         INT 29H
-        LOOP W3
+        LOOP W3 ;OUTPUT INTEGER VALUE
     
         MOV DX, OSTACHA
         TEST DX, DX
-        JZ .END
+        JZ .END ;JUMP WITHOUT OSTACHA
     
-        MOV AL, '.'
+        MOV AL, '.';OUTPUTTING DOT  
         INT 29H
-        MOV CX, PRECISION   
+        MOV CX, PRECISION ; AVAIBLE NUBERS COUNT FOR OSTACHA   
     AFTERCOMMA:
         MOV BX, 10
         MOV AX, DX
-        MUL BX
+        MUL BX ;AX * BX AND SAFE INTO AX
         MOV BX, DILNYK
-        DIV BX
+        DIV BX ;AX/BX AND SAFER INTO AX
         TEST AX, AX
         JZ OSTACHACHECK
     OSTACHANOTZERO:
-        ADD AL, '0'
+    ADD AL, '0' ;CONVERTING VALUE TO CHAR
         INT 29H
         LOOP AFTERCOMMA
     .END:
@@ -260,7 +260,7 @@ MAIN PROC FAR
         XOR AX, AX ; CLEAR REGISTERS
         XOR DX, DX
         XOR CX, CX
-        MOV AH,9 ; WRITE MESSAGE
+        MOV AH,9 ; WRITE MESSAGE TO CONSOLE 
         LEA DX, INPUTX
         INT 21H
     
@@ -272,12 +272,12 @@ MAIN PROC FAR
     
     CALL READNUM
     MOV NUMBERS, AX
-    MOV AL, 10 ; LF
+    MOV AL, 10 ; LF - LINE FEED 
         INT 29H
     
-        MOV AL, 13 ; CR
+        MOV AL, 13 ; CR - CARRIEGE RETURN
         INT 29H
-        MOV AH,9 ; WRITE MESSAGE
+        MOV AH,9 ; WRITE MESSAGE TO CONSOLE
         LEA DX, INPUTY
         INT 21H
     
@@ -289,7 +289,7 @@ MAIN PROC FAR
     CALL READNUM
     MOV NUMBERS+2, AX
     CALL CALCULATE
-    cmp ax, "z"
+    cmp ax, "z" ;IF IN AX WE STORED Z AND ITS EQUAL => JUMP 
     JE return
     CALL WRITENUM
     return:
