@@ -1,162 +1,162 @@
-stseg SEGMENT PARA STACK "STACK"
-  db 64 dup ("STACK")
-stseg ENDS
+STSEG SEGMENT PARA STACK "STACK"
+  DB 64 DUP ("STACK")
+STSEG ENDS
 
-dtseg SEGMENT PARA PUBLIC "DATA"
-    buf db 7, ?, 7 dup ('?')        ; 6 chars + newline (enter), ? is for real number of inputted chars
-                                    ; reserve 7 bytes for the  buffer itself
+DTSEG SEGMENT PARA PUBLIC "DATA"
+    BUF DB 7, ?, 7 DUP ('?')        ; 6 CHARS + NEWLINE (ENTER), ? IS FOR REAL NUMBER OF INPUTTED CHARS
+                                    ; RESERVE 7 BYTES FOR THE  BUFFER ITSELF
     
     
     
-    num dw -32768                   ; define word (16 bit = 2 bytes)
-    zeronum db 0                    ; is our number negative. If so =1 or 0 otherwise
-    errortxt db ("wrong input! $")
-    inputtext db ("number: $")
-    answertext db (" - 78 = $")
-dtseg ENDS
+    NUM DW -32768                   ; DEFINE WORD (16 BIT = 2 BYTES)
+    ZERONUM DB 0                    ; IS OUR NUMBER NEGATIVE. IF SO =1 OR 0 OTHERWISE
+    ERRORTXT DB ("WRONG INPUT! $")
+    INPUTTEXT DB ("NUMBER: $")
+    ANSWERTEXT DB (" - 78 = $")
+DTSEG ENDS
 
-cdseg SEGMENT PARA PUBLIC "CODE"        
-    main proc far
-    assume ds:dtseg, ss:stseg, cs:cdseg    
+CDSEG SEGMENT PARA PUBLIC "CODE"        
+    MAIN PROC FAR
+    ASSUME DS:DTSEG, SS:STSEG, CS:CDSEG    
     
-    push ds         ; saving retrun address
-    sub ax, ax      ; AX - AX  = 0 subtract
-    push ax
-    
-    
-    mov ax, dtseg   ; put address of data segment in DS  
-    mov ds, ax
+    PUSH DS         ; SAVING RETRUN ADDRESS
+    SUB AX, AX      ; AX - AX  = 0 SUBTRACT
+    PUSH AX
     
     
-    lea dx, inputtext ; lea = load effective address (loads address of inputtext into DX)
-    mov ah, 9 
-    int 21h             ; 9th function of 21st interrupt = print string to console
+    MOV AX, DTSEG   ; PUT ADDRESS OF DATA SEGMENT IN DS  
+    MOV DS, AX
+    
+    
+    LEA DX, INPUTTEXT ; LEA = LOAD EFFECTIVE ADDRESS (LOADS ADDRESS OF INPUTTEXT INTO DX)
+    MOV AH, 9 
+    INT 21H             ; 9TH FUNCTION OF 21ST INTERRUPT = PRINT STRING TO CONSOLE
 
-    fstart:
-        call numscan
-        call newline
-        call numoutput
-        lea dx, answertext  
-        mov ah, 9  
-        int 21h    
-        mov ax, num
-        sub ax, 78    
-        jno er    
-        lea dx, errortxt    
-        mov ah, 9
-        int 21h    
-        call error
-        mov zeronum, 0
-        sub ax, ax   
-        sub bx, bx
-        sub cx, cx
-        sub dx, dx
-        jmp fstart     
-        er:    
-            mov num, ax
-            call numoutput
-    ret
+    FSTART:
+        CALL NUMSCAN
+        CALL NEWLINE
+        CALL NUMOUTPUT
+        LEA DX, ANSWERTEXT  
+        MOV AH, 9  
+        INT 21H    
+        MOV AX, NUM
+        SUB AX, 78    
+        JNO ER    
+        LEA DX, ERRORTXT    
+        MOV AH, 9
+        INT 21H    
+        CALL ERROR
+        MOV ZERONUM, 0
+        SUB AX, AX   
+        SUB BX, BX
+        SUB CX, CX
+        SUB DX, DX
+        JMP FSTART     
+        ER:    
+            MOV NUM, AX
+            CALL NUMOUTPUT
+    RET
     
-    numscan proc    
-        start:
-            mov ah, 10      ; 
-            lea dx, buf     ; address of buffer gets loaded into DX 
-            int 21h         ; 10th function of 21th interrupt = reads chars from console to buffer
+    NUMSCAN PROC    
+        START:
+            MOV AH, 10      ; 
+            LEA DX, BUF     ; ADDRESS OF BUFFER GETS LOADED INTO DX 
+            INT 21H         ; 10TH FUNCTION OF 21TH INTERRUPT = READS CHARS FROM CONSOLE TO BUFFER
             
-            sub ax, ax      ; AX=0   
-            sub bx, bx      ; BX=0
-            sub cx, cx      ; CX=0
-            mov cl, buf + 1 ; CL = number of chars inputted
-            lea di, buf + 2 ; DI = address of the start of inputted chrs themselves
-        s1:
-            mov bl, [di]    ; BL = first char that was inputted (adress transfer)   
-            sub bl, '0'     ; convert ASCII symbol into real number    
+            SUB AX, AX      ; AX=0   
+            SUB BX, BX      ; BX=0
+            SUB CX, CX      ; CX=0
+            MOV CL, BUF + 1 ; CL = NUMBER OF CHARS INPUTTED
+            LEA DI, BUF + 2 ; DI = ADDRESS OF THE START OF INPUTTED CHRS THEMSELVES
+        S1:
+            MOV BL, [DI]    ; BL = FIRST CHAR THAT WAS INPUTTED (ADRESS TRANSFER)   
+            SUB BL, '0'     ; CONVERT ASCII SYMBOL INTO REAL NUMBER    
             
-            cmp bl, 9       ; COMPARE BL to 9
-            ja errnotnum    ; (jump-if-above) if BL bigger than 9, jump 
-            cmp bl, 0       ; COMPARE BL to 0
-            jb errnotnum    ; (jump-if-below) if BL is lower than 0, jump
-            mov dx, 10      ; 
-            imul dx
-            jo errrestart   ; (jump-if-overflow) 
-            add ax, bx
-            jo errrestart   ; (jump-if-overflow)
+            CMP BL, 9       ; COMPARE BL TO 9
+            JA ERRNOTNUM    ; (JUMP-IF-ABOVE) IF BL BIGGER THAN 9, JUMP 
+            CMP BL, 0       ; COMPARE BL TO 0
+            JB ERRNOTNUM    ; (JUMP-IF-BELOW) IF BL IS LOWER THAN 0, JUMP
+            MOV DX, 10      ; 
+            IMUL DX
+            JO ERRRESTART   ; (JUMP-IF-OVERFLOW) 
+            ADD AX, BX
+            JO ERRRESTART   ; (JUMP-IF-OVERFLOW)
             
-            sub bx, bx
-            jmp end5
-            errnotnum:   
-                add bl, '0'
-                mov dl, buf + 1
-                cmp cl, dl    
-                jne errrestart
-                cmp bl, '-'   
-                je isneg 
-            errrestart:
-                call error
-                mov zeronum, 0    
-                jmp start    
-            isneg:
-                mov zeronum, 1    
-            end5:
-                inc di       ; increment DI
-            loop s1
+            SUB BX, BX
+            JMP END5
+            ERRNOTNUM:   
+                ADD BL, '0'
+                MOV DL, BUF + 1
+                CMP CL, DL    
+                JNE ERRRESTART
+                CMP BL, '-'   
+                JE ISNEG 
+            ERRRESTART:
+                CALL ERROR
+                MOV ZERONUM, 0    
+                JMP START    
+            ISNEG:
+                MOV ZERONUM, 1    
+            END5:
+                INC DI       ; INCREMENT DI
+            LOOP S1
         
-        cmp zeronum, 1        ; if minus was inputted
-        jne isnotneg    ; jump-not-equal
-        neg ax   
-        isnotneg:    
-            mov num, ax
-            ret
-        numscan ENDP
+        CMP ZERONUM, 1        ; IF MINUS WAS INPUTTED
+        JNE ISNOTNEG    ; JUMP-NOT-EQUAL
+        NEG AX   
+        ISNOTNEG:    
+            MOV NUM, AX
+            RET
+        NUMSCAN ENDP
     
-    newline proc   
-        push ax    
-        sub ax, ax 
-        mov al, 10 ; line feed character
-        int 29h ;   output character from AL
-        pop ax    
-        ret
-    newline ENDP
+    NEWLINE PROC   
+        PUSH AX    
+        SUB AX, AX 
+        MOV AL, 10 ; LINE FEED CHARACTER
+        INT 29H ;   OUTPUT CHARACTER FROM AL
+        POP AX    
+        RET
+    NEWLINE ENDP
     
-    error proc             
-        call newline       
-        mov ah, 9          
-        lea dx, errortxt   
-        int 21h            
+    ERROR PROC             
+        CALL NEWLINE       
+        MOV AH, 9          
+        LEA DX, ERRORTXT   
+        INT 21H            
         
-        call newline       
-        lea dx, inputtext  
-        mov ah, 9          
-        int 21h            
-        ret
-    error ENDP
+        CALL NEWLINE       
+        LEA DX, INPUTTEXT  
+        MOV AH, 9          
+        INT 21H            
+        RET
+    ERROR ENDP
     
-    numoutput proc        
-        mov bx, num       
-        or  bx, bx    ;didn't change BX, but set flags    
-        jns m1        ; (jump-if-not-sign-flag)
-        mov al, '-'   ; print minus    
-        int 29h
-        neg bx            
-        m1:
-            mov ax, bx    
-            sub cx, cx    
-            mov bx, 10    
-        m2:
-            sub dx, dx    
-            div bx    ; divide AX by BX(10), store result in AX and remainder in DX    
-            add dl, '0'; converts decimal to char   
-            push dx       
-            inc cx        
-            test ax, ax ; to set flags  
-            jnz m2        ; jump-if-not-0
-        m3:
-            pop ax        
-            int 29h       
-            loop m3 
-        ret
-    numoutput ENDP
+    NUMOUTPUT PROC        
+        MOV BX, NUM       
+        OR  BX, BX    ;DIDN'T CHANGE BX, BUT SET FLAGS    
+        JNS M1        ; (JUMP-IF-NOT-SIGN-FLAG)
+        MOV AL, '-'   ; PRINT MINUS    
+        INT 29H
+        NEG BX            
+        M1:
+            MOV AX, BX    
+            SUB CX, CX    
+            MOV BX, 10    
+        M2:
+            SUB DX, DX    
+            DIV BX    ; DIVIDE AX BY BX(10), STORE RESULT IN AX AND REMAINDER IN DX    
+            ADD DL, '0'; CONVERTS DECIMAL TO CHAR   
+            PUSH DX       
+            INC CX        
+            TEST AX, AX ; TO SET FLAGS  
+            JNZ M2        ; JUMP-IF-NOT-0
+        M3:
+            POP AX        
+            INT 29H       
+            LOOP M3 
+        RET
+    NUMOUTPUT ENDP
     
-main ENDP
-cdseg ENDS
-end main
+MAIN ENDP
+CDSEG ENDS
+END MAIN
